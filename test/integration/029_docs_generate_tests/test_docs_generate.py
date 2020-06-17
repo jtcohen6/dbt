@@ -2,14 +2,18 @@ import hashlib
 import json
 import os
 import random
+import shutil
+import tempfile
 import time
 from datetime import datetime
 from unittest.mock import ANY, patch
 
 from test.integration.base import DBTIntegrationTest, use_profile, AnyFloat, \
     AnyString, AnyStringWith, normalize, Normalized
+from pytest import mark
 
 from dbt.exceptions import CompilationException
+
 
 def _read_file(path):
     with open(path, 'r') as fp:
@@ -3180,3 +3184,51 @@ class TestDocsGenerateOverride(DBTIntegrationTest):
             self.run_dbt(['docs', 'generate'])
 
         self.assertIn('rejected: no catalogs for you', str(exc.exception))
+
+
+@mark.skipif(os.name != 'nt', 'This is only relevant on windows')
+class TestDocsGenerateLongWindowsPaths(DBTIntegrationTest):
+    def _generate_test_root_dir(self):
+        assert os.name == 'nt'
+        # tempfile.mkdtemp doesn't use `\\?\` by default so we have to
+        # get a tiny bit creative.
+        temp_dir = tempfile.gettempdir()
+        magic_prefix = '\\\\?\\'
+        if not temp_dir.startswith(magic_prefix):
+            temp_dir = magic_prefix + temp_dir
+        outer = tempfile.mkdtemp(prefix='dbt-int-test-', dir=temp_dir)
+        self._tmp_real_root = outer
+        # then inside _that_ directory make a new one with <just barely 260
+        # chars (having >260 chars in a path element appears to never work)
+        inner = os.mkdir(os.path.join(outer, 'a'*250))
+        return normalize(inner)
+
+    def tearDown(self):
+        super().tearDown()
+        shutil.rmtree(self._tmp_real_root)
+
+    @property
+    def schema(self):
+        return 'docs_generate_029'
+
+    @staticmethod
+    def dir(path):
+        return normalize(path)
+
+    @property
+    def models(self):
+        return self.dir("trivial_models")
+
+    def run_and_generate(self):
+        self.assertEqual(len(self.run_dbt(['run'])), 1)
+        os.remove(normalize('target/manifest.json'))
+        os.remove(normalize('target/run_results.json'))
+        self.run_dbt(['docs', 'generate'])
+
+    @use_profile('postgres')
+    def test_postgres_long_paths(self):
+        self.run_and_generate()
+        # this doesn't use abspath, so all should be well here
+        manifest = _read_json('./target/manifest.json')
+        self.assertIn('nodes', manifest)
+        assert os.path.exists('./target/run/test/models/model.sql')
