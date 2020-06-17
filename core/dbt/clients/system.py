@@ -184,9 +184,24 @@ def convert_path(path: str) -> str:
     """
     if sys.platform != 'win32':
         return path
-    path = os.path.normpath(path)
-    # this magic prefix tells Windows "I want to use long paths".
     prefix = '\\\\?\\'
+    # Nothing to do
+    if path.startswith(prefix):
+        return path
+    path = os.path.normpath(path)
+    if path.startswith('\\'):
+        # if a path starts with '\\', splitdrive() on it will return '' for the
+        # drive, but the prefix requires a drive letter. So let's add the drive
+        # letter back in.
+        curdrive = os.path.splitdrive(os.getcwd())[0]
+        path = curdrive + path
+
+    # now our path is either an absolute UNC path or relative to the current
+    # directory. If it's relative, we need to make it absolute or the prefix
+    # won't work.
+    if not os.path.splitdrive(path)[0]:
+        path = os.path.join(os.getcwd(), path)
+
     if not path.startswith(prefix):
         path = prefix + path
     return path

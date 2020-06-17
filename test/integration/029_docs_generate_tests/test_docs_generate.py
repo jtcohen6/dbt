@@ -3186,7 +3186,7 @@ class TestDocsGenerateOverride(DBTIntegrationTest):
         self.assertIn('rejected: no catalogs for you', str(exc.exception))
 
 
-@mark.skipif(os.name != 'nt', 'This is only relevant on windows')
+@mark.skipif(os.name != 'nt', reason='This is only relevant on windows')
 class TestDocsGenerateLongWindowsPaths(DBTIntegrationTest):
     def _generate_test_root_dir(self):
         assert os.name == 'nt'
