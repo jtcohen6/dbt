@@ -13,7 +13,7 @@ trigger:
 jobs:
 - job: UnitTest
   pool:
-    vmImage: 'vs2017-win2016'
+    vmImage: 'windows-2019'
   steps:
   - task: UsePythonVersion@0
     inputs:
@@ -28,7 +28,7 @@ jobs:
 
 - job: PostgresIntegrationTest
   pool:
-    vmImage: 'vs2017-win2016'
+    vmImage: 'windows-2019'
   dependsOn: UnitTest
 
   steps:
@@ -57,8 +57,8 @@ jobs:
   # we only should need this for postgres, as it's the only one that participates in the long-path test
   # I'm not sure what version of windows corresponds to needing one/both of these. My demo system doesn't have this problem!
   - pwsh: |
-    Set-ItemProperty -Path "HLKM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name LongPathsEnabled -Type DWord -Value 1
-    Set-ItemProperty -Path "HLKM:\SYSTEM\ControlSet001\Control\FileSystem" -Name LongPathsEnabled -Type DWord -Value 1
+      Set-ItemProperty -Path "HLKM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name LongPathsEnabled -Type DWord -Value 1
+      Set-ItemProperty -Path "HLKM:\SYSTEM\ControlSet001\Control\FileSystem" -Name LongPathsEnabled -Type DWord -Value 1
 
   - script: python -m tox -e pywin-postgres
     displayName: Run integration tests
@@ -67,7 +67,7 @@ jobs:
 # but there's probably a better way to do this!
 - job: SnowflakeIntegrationTest
   pool:
-    vmImage: 'vs2017-win2016'
+    vmImage: 'windows-2019'
   dependsOn: PostgresIntegrationTest
   condition: and(succeeded(), ne(variables['SYSTEM.PULLREQUEST.ISFORK'], 'true'))
   steps:
@@ -92,7 +92,7 @@ jobs:
 
 - job: BigQueryIntegrationTest
   pool:
-    vmImage: 'vs2017-win2016'
+    vmImage: 'windows-2019'
   dependsOn: PostgresIntegrationTest
   condition: and(succeeded(), ne(variables['SYSTEM.PULLREQUEST.ISFORK'], 'true'))
   steps:
@@ -109,7 +109,7 @@ jobs:
 
 - job: RedshiftIntegrationTest
   pool:
-    vmImage: 'vs2017-win2016'
+    vmImage: 'windows-2019'
   dependsOn: PostgresIntegrationTest
   condition: and(succeeded(), ne(variables['SYSTEM.PULLREQUEST.ISFORK'], 'true'))
   steps:
@@ -132,7 +132,7 @@ jobs:
 
 - job: BuildWheel
   pool:
-    vmImage: 'vs2017-win2016'
+    vmImage: 'windows-2019'
   dependsOn:
     - UnitTest
     - PostgresIntegrationTest
