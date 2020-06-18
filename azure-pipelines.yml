@@ -54,6 +54,9 @@ jobs:
   - script: python -m pip install --upgrade pip && pip install tox
     displayName: 'Install dependencies'
 
+  # we only should need this for postgres, as it's the only one that participates in the long-path test
+  - pwsh: Set-ItemProperty -Path "HLKM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name LongPathsEnabled -Value 1
+
   - script: python -m tox -e pywin-postgres
     displayName: Run integration tests
 
