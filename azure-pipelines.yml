@@ -55,7 +55,10 @@ jobs:
     displayName: 'Install dependencies'
 
   # we only should need this for postgres, as it's the only one that participates in the long-path test
-  - pwsh: Set-ItemProperty -Path "HLKM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name LongPathsEnabled -Value 1
+  # I'm not sure what version of windows corresponds to needing one/both of these. My demo system doesn't have this problem!
+  - pwsh: |
+    Set-ItemProperty -Path "HLKM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name LongPathsEnabled -Type DWord -Value 1
+    Set-ItemProperty -Path "HLKM:\SYSTEM\ControlSet001\Control\FileSystem" -Name LongPathsEnabled -Type DWord -Value 1
 
   - script: python -m tox -e pywin-postgres
     displayName: Run integration tests
