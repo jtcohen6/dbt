@@ -156,3 +156,70 @@ class TestPersistDocsSimple(BasePersistDocsTest):
     @use_profile('bigquery')
     def test_bigquery_persist_docs(self):
         self.run_dbt()
+
+
+class TestPersistDocsNested(BasePersistDocsTest):
+    @property
+    def project_config(self):
+        return {
+            'config-version': 2,
+            'models': {
+                'test': {
+                    '+persist_docs': {
+                        "relation": True,
+                        "columns": True,
+                    },
+                }
+            }
+        }
+
+    @property
+    def models(self):
+        return 'models-bigquery-nested'
+
+    @use_profile('bigquery')
+    def test_bigquery_persist_docs(self):
+        """
+        run dbt and use the bigquery client from the adapter to check if the
+        colunmn descriptions are persisted on the test model table and view.
+        """
+        import sys
+        self.run_dbt()
+
+        with self.adapter.connection_named('_test'):
+            client = self.adapter.connections.get_thread_connection().handle
+
+            # test for table model
+            table_id = "{}.{}.{}".format(
+                self.default_database,
+                self.unique_schema(),
+                "table_model_nested"
+            )
+            bq_table_schema = client.get_table(table_id).schema
+
+            level_1_field = bq_table_schema[0]
+            assert level_1_field.description == "level_1 column description"
+
+            level_2_field = level_1_field.fields[0]
+            assert level_2_field.description == "level_2 column description"
+
+            level_3_field = level_2_field.fields[0]
+            assert level_3_field.description == "level_3 column description"
+
+            # test for view model
+            view_id = "{}.{}.{}".format(
+                self.default_database,
+                self.unique_schema(),
+                "view_model_nested"
+            )
+            bq_view_schema = client.get_table(view_id).schema
+
+            level_1_field = bq_view_schema[0]
+            assert level_1_field.description == "level_1 column description"
+
+            level_2_field = level_1_field.fields[0]
+            assert level_2_field.description == "level_2 column description"
+
+            level_3_field = level_2_field.fields[0]
+            assert level_3_field.description == "level_3 column description"
+
