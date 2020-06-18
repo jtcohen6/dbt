@@ -3200,7 +3200,8 @@ class TestDocsGenerateLongWindowsPaths(DBTIntegrationTest):
         self._tmp_real_root = outer
         # then inside _that_ directory make a new one with <just barely 260
         # chars (having >260 chars in a path element appears to never work)
-        inner = os.mkdir(os.path.join(outer, 'a'*250))
+        inner = os.path.join(outer, 'a'*250)
+        os.mkdir(inner)
         return normalize(inner)
 
     def tearDown(self):
